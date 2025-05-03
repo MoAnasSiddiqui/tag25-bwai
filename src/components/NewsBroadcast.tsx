@@ -21,6 +21,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import type { NewsArticle } from "@/services/news-scraper";
+import { set } from "date-fns";
 
 interface NewsBroadcastProps {
   script: string;
@@ -35,6 +36,8 @@ const NewsBroadcast: React.FC<NewsBroadcastProps> = ({ script, article }) => {
   const [audioDuration, setAudioDuration] = useState<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null); // Placeholder for TTS audio URL
+  const [videoUrl, setVideoUrl] = useState<string | null>(null); // Placeholder for lipsync video URL
+  const [isVideoLoading, setIsVideoLoading] = useState(true); // Placeholder for video loading state
 
   // Placeholder for Text-to-Speech functionality
   // useEffect(() => {
@@ -83,6 +86,34 @@ const NewsBroadcast: React.FC<NewsBroadcastProps> = ({ script, article }) => {
 
     generateAudio();
   }, [script]);
+
+  useEffect(() => {
+    async function fetchLipsync() {
+      if (!audioUrl) return; // Don't fetch if no audio URL
+      try {
+        setIsVideoLoading(true);
+        const response = await fetch("/api/lipsync", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            audioBase64: audioUrl?.split(",")[1], // Extract base64 part
+            imageUrl:
+              "https://static.vecteezy.com/system/resources/thumbnails/029/329/444/small_2x/a-of-a-tv-news-female-presenter-on-a-popular-channel-live-stream-broadcast-on-television-ai-generative-photo.jpg", // Placeholder for avatar image
+          }),
+        });
+
+        const data = await response.json();
+        setVideoUrl(data.videoUrl);
+      } catch (error) {
+        console.error("Error fetching lipsync:", error);
+      } finally {
+        setIsVideoLoading(false);
+      }
+    }
+    fetchLipsync();
+  }, [audioUrl]);
 
   const handlePlayPause = () => {
     if (!audioRef.current || isAudioLoading) return; // Don't interact if loading or no audio element
@@ -287,6 +318,28 @@ const NewsBroadcast: React.FC<NewsBroadcastProps> = ({ script, article }) => {
                   <Loader2 className="h-8 w-8 text-white animate-spin mb-2" />
                   <p className="text-white text-lg font-medium">
                     Generating audio...
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className="w-full aspect-video bg-gray-200 dark:bg-gray-700 rounded-lg mb-4 flex items-center justify-center relative overflow-hidden shadow-inner">
+              {videoUrl ? (
+                <video
+                  src={videoUrl}
+                  autoPlay
+                  muted={isMuted}
+                  controls
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div>avatar</div>
+              )}
+              {/* Loading Indicator for Video */}
+              {isVideoLoading && (
+                <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center z-10">
+                  <Loader2 className="h-8 w-8 text-white animate-spin mb-2" />
+                  <p className="text-white text-lg font-medium">
+                    Generating video...
                   </p>
                 </div>
               )}

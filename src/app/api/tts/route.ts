@@ -17,13 +17,56 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     }
 
+    const testOptions = [
+      {
+        audioConfig: {
+          audioEncoding: "LINEAR16",
+          effectsProfileId: ["small-bluetooth-speaker-class-device"],
+          pitch: 0,
+          speakingRate: 1,
+        },
+        input: {
+          text: "Movies, oh my gosh, I just just absolutely love them. They're like time machines taking you to different worlds and landscapes, and um, and I just can't get enough of it.",
+        },
+        voice: {
+          languageCode: "en-US",
+          name: "en-US-Chirp3-HD-Achernar",
+        },
+      },
+      {
+        input: {
+          ssml: `
+                    <speak>
+                      <prosody rate="medium" pitch="0st">
+                        Hello there! I'm <emphasis level="moderate">not</emphasis> your average robot voice.
+                      </prosody>
+                    </speak>
+                  `,
+        },
+        voice: {
+          languageCode: "en-US",
+          // name: "en-US-Studio-M",
+          // name: "en-US-Chirp-HD-D", // Choose a voice from GCP dashboard
+          name: "en-US-Wavenet-F", // Choose a voice from GCP dashboard
+        },
+        audioConfig: { audioEncoding: "MP3" },
+      },
+    ];
+
     const [response] = await client.synthesizeSpeech({
-      input: { text: script },
+      audioConfig: {
+        audioEncoding: "LINEAR16",
+        effectsProfileId: ["small-bluetooth-speaker-class-device"],
+        pitch: 0,
+        speakingRate: 1,
+      },
+      input: {
+        text: script,
+      },
       voice: {
         languageCode: "en-US",
-        name: "en-US-News-K", // Choose a voice from GCP dashboard
+        name: "en-US-Chirp3-HD-Achernar",
       },
-      audioConfig: { audioEncoding: "MP3" },
     });
 
     const audioBase64 = Buffer.from(
