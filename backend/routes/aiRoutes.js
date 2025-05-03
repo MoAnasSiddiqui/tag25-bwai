@@ -1,6 +1,7 @@
 const express = require("express");
 const { z } = require("zod");
 const { ai } = require("../ai/ai-instance"); // 🔁 Drop `.js` to avoid ESM headaches
+const { generateAudio } = require("../services/text-to-speech");
 
 const router = express.Router();
 
@@ -13,9 +14,10 @@ const GenerateNewsScriptInputSchema = z.object({
 
 const GenerateNewsScriptOutputSchema = z.object({
   script: z.string(),
+  audioUrl: z.string(), // Add the URL for the audio file
 });
 
-// AI Prompt
+// AI Prompt for generating the script
 const prompt = ai.definePrompt({
   name: "generateNewsScriptPrompt",
   input: { schema: GenerateNewsScriptInputSchema },
@@ -27,7 +29,7 @@ Article Content: {{{articleContent}}}
 Source URL: {{{articleUrl}}}`,
 });
 
-// Flow logic
+// Flow logic to generate script and audio
 const generateNewsScriptFlow = ai.defineFlow(
   {
     name: "generateNewsScriptFlow",
@@ -36,11 +38,127 @@ const generateNewsScriptFlow = ai.defineFlow(
   },
   async (input) => {
     const { output } = await prompt(input);
-    return output;
+
+    // Generate audio for the script
+    const audioUrl = await generateAudio(output.script);
+
+    return {
+      script: output.script,
+      audioUrl,
+    };
   }
 );
 
-// POST route for generating news script
+// In-memory cache for articles, scripts, and audio URLs
+let cachedArticles = [];
+let cachedScripts = [];
+let cachedAudio = [];
+let lastUpdated = null;
+
+// Dummy articles (mocked data - this will eventually be replaced with a real source)
+function fetchDummyArticles() {
+  return [
+    {
+      title:
+        "Local Man Discovers Secret Portal in Refrigerator, Accidentally Attends 1987 Office Meeting",
+      content:
+        "In what experts are calling “a highly unusual time-space kitchen anomaly,” a man from Des Moines claims he stumbled upon a glowing vortex behind a jar of pickles in his refrigerator...",
+      url: "https://example.com/news1",
+    },
+    {
+      title:
+        "World Leaders Meet for Emergency Summit on Rising Penguin Uprisings in the Southern Hemisphere",
+      content:
+        "In an unprecedented turn of events, world leaders have convened in Geneva to address a surge in coordinated penguin activity...",
+      url: "https://example.com/news2",
+    },
+    // {
+    //   title:
+    //     "Startup Launches Subscription Service for Renting Emotions—Beta Testers Confused and Crying",
+    //   content:
+    //     "Silicon Valley startup *FeelShare* has launched an experimental platform allowing users to “stream” emotions on demand...",
+    //   url: "https://example.com/news3",
+    // },
+    // {
+    //   title:
+    //     "Aliens Land in Kansas, Ask for WiFi Password, Leave After Realizing We Still Use 5G",
+    //   content:
+    //     "A brief extraterrestrial encounter rocked a small Kansas town yesterday when a saucer-shaped craft landed outside a gas station...",
+    //   url: "https://example.com/news4",
+    // },
+    // {
+    //   title:
+    //     "Underground Society of Cats Apparently Running Shadow Government, Whistleblower Claims",
+    //   content:
+    //     "In a leak that’s shocking yet strangely validating to cat owners, a whistleblower from within the Department of Homeland Security...",
+    //   url: "https://example.com/news5",
+    // },
+  ];
+}
+
+/// Function to generate scripts and audio for the articles
+async function generateScriptsAndAudioForArticles(articles) {
+  const scriptsAndAudio = [];
+
+  for (const article of articles) {
+    const { title, content, url } = article;
+    const input = {
+      articleTitle: title,
+      articleContent: content,
+      articleUrl: url,
+    };
+
+    try {
+      const result = await generateNewsScriptFlow(input);
+      scriptsAndAudio.push({
+        script: result.script,
+        audioUrl: result.audioUrl,
+      });
+    } catch (err) {
+      console.error(
+        "Error generating script and audio for article:",
+        title,
+        err
+      );
+      scriptsAndAudio.push({
+        script: "Error generating script",
+        audioUrl: null,
+      });
+    }
+  }
+
+  return scriptsAndAudio;
+}
+
+// Function to refresh articles, scripts, and audio
+async function updateArticles() {
+  console.log("[Article Refresh] Fetching fresh articles...");
+  cachedArticles = fetchDummyArticles(); // Replace with real source
+  const scriptsAndAudio = await generateScriptsAndAudioForArticles(
+    cachedArticles
+  ); // Generate scripts and audio
+  cachedScripts = scriptsAndAudio.map((item) => item.script);
+  cachedAudio = scriptsAndAudio.map((item) => item.audioUrl);
+  lastUpdated = new Date();
+}
+
+// Run once on startup
+updateArticles();
+
+// Set interval to refresh every hour
+setInterval(updateArticles, 60 * 60 * 1000); // 1 hour in ms
+
+// GET route to serve cached articles, scripts, and audio
+router.get("/get-articles", (_req, res) => {
+  res.json({
+    articles: cachedArticles,
+    scripts: cachedScripts,
+    audioUrls: cachedAudio,
+    lastUpdated,
+  });
+});
+
+// POST route for generating a news script and audio from a specific article
 router.post("/generate-news-script", async (req, res) => {
   try {
     const input = GenerateNewsScriptInputSchema.parse(req.body);
@@ -55,50 +173,6 @@ router.post("/generate-news-script", async (req, res) => {
     console.error("AI generation error:", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
-});
-
-// Dummy articles (mocked content)
-const dummyArticles = [
-  {
-    title:
-      "Local Man Discovers Secret Portal in Refrigerator, Accidentally Attends 1987 Office Meeting",
-    content:
-      "In what experts are calling “a highly unusual time-space kitchen anomaly,” a man from Des Moines claims he stumbled upon a glowing vortex behind a jar of pickles in his refrigerator...",
-    url: "https://example.com/news1",
-  },
-  {
-    title:
-      "World Leaders Meet for Emergency Summit on Rising Penguin Uprisings in the Southern Hemisphere",
-    content:
-      "In an unprecedented turn of events, world leaders have convened in Geneva to address a surge in coordinated penguin activity...",
-    url: "https://example.com/news2",
-  },
-  {
-    title:
-      "Startup Launches Subscription Service for Renting Emotions—Beta Testers Confused and Crying",
-    content:
-      "Silicon Valley startup *FeelShare* has launched an experimental platform allowing users to “stream” emotions on demand...",
-    url: "https://example.com/news3",
-  },
-  {
-    title:
-      "Aliens Land in Kansas, Ask for WiFi Password, Leave After Realizing We Still Use 5G",
-    content:
-      "A brief extraterrestrial encounter rocked a small Kansas town yesterday when a saucer-shaped craft landed outside a gas station...",
-    url: "https://example.com/news4",
-  },
-  {
-    title:
-      "Underground Society of Cats Apparently Running Shadow Government, Whistleblower Claims",
-    content:
-      "In a leak that’s shocking yet strangely validating to cat owners, a whistleblower from within the Department of Homeland Security...",
-    url: "https://example.com/news5",
-  },
-];
-
-// GET route for dummy articles
-router.get("/get-articles", (_req, res) => {
-  res.json(dummyArticles);
 });
 
 module.exports = router;

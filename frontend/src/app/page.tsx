@@ -68,70 +68,38 @@ function NewsBroadcastLoading() {
 }
 
 export default function Home() {
-  const [article, setArticle] = useState<NewsArticle | null>(null);
-  const [script, setScript] = useState<string | null>(null);
+  const [articles, setArticles] = useState<NewsArticle[]>([]);
+  const [scripts, setScripts] = useState<string[]>([]);
+  const [audioUrls, setAudioUrls] = useState<string[]>([]);
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Function to fetch news articles
   const fetchNews = async () => {
+    setIsLoading(true);
     try {
       const response = await fetch("http://localhost:5000/ai/get-articles");
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
 
-      const articles = await response.json();
+      const data = await response.json();
 
-      if (articles && articles.length > 0) {
-        // Select a random article
-        const randomArticle =
-          articles[Math.floor(Math.random() * articles.length)];
-        setArticle(randomArticle);
-
-        // Generate script for the selected article
-        await generateScript(randomArticle);
+      if (data?.articles && data?.articles.length > 0) {
+        setArticles(data.articles);
+        setScripts(data.scripts);
+        const baseUrl = "http://localhost:5000";
+        const fullUrls = data.audioUrls.map((url) => `${baseUrl}${url}`);
+        setAudioUrls(fullUrls);
+        console.log(fullUrls);
+        setCurrentIndex(0); // Reset to first article
       } else {
         setError("No news articles could be fetched or found.");
-        setIsLoading(false);
       }
     } catch (fetchError) {
       console.error("Error fetching news:", fetchError);
       setError(`Failed to fetch news. Please try again later.`);
-      setIsLoading(false);
-    }
-  };
-
-  // Function to generate news script
-  const generateScript = async (articleData: NewsArticle) => {
-    try {
-      const response = await fetch(
-        "http://localhost:5000/ai/generate-news-script",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            articleTitle: articleData.title,
-            articleContent: articleData.content,
-            articleUrl: articleData.url,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      setScript(data.script);
-    } catch (genError) {
-      console.error("Error generating script:", genError);
-      setError(
-        "Failed to generate news script. Displaying article details only."
-      );
-      // Keep article data even if script generation fails
     } finally {
       setIsLoading(false);
     }
@@ -142,14 +110,27 @@ export default function Home() {
     fetchNews();
   }, []);
 
+  // Function to advance to the next article
+  const goToNextArticle = () => {
+    if (articles.length > 0) {
+      setCurrentIndex((prevIndex) => (prevIndex + 1) % articles.length);
+    }
+  };
+
   // Function to refresh content
   const handleRefresh = () => {
     setIsLoading(true);
     setError(null);
-    setArticle(null);
-    setScript(null);
+    setArticles([]);
+    setScripts([]);
+    setAudioUrls([]);
     fetchNews();
   };
+
+  // Get current article, script, and audio URL
+  const currentArticle = articles.length > 0 ? articles[currentIndex] : null;
+  const currentScript = scripts.length > 0 ? scripts[currentIndex] : null;
+  const currentAudioUrl = audioUrls.length > 0 ? audioUrls[currentIndex] : null;
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-background to-secondary">
@@ -167,20 +148,27 @@ export default function Home() {
             </svg>
             NewsCastAI
           </h1>
-          <button
-            onClick={handleRefresh}
-            className="px-4 py-2 bg-accent text-accent-foreground rounded-md hover:bg-accent/80 transition-colors"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 inline animate-spin" />
-                Loading...
-              </>
-            ) : (
-              "New Article"
+          <div className="flex items-center space-x-4">
+            {!isLoading && articles.length > 0 && (
+              <div className="text-sm text-muted-foreground">
+                {currentIndex + 1} of {articles.length}
+              </div>
             )}
-          </button>
+            <button
+              onClick={handleRefresh}
+              className="px-4 py-2 bg-accent text-accent-foreground rounded-md hover:bg-accent/80 transition-colors"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 inline animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                "Refresh Articles"
+              )}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -192,36 +180,24 @@ export default function Home() {
             <Terminal className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
-            {article && !script && (
-              <div className="mt-4 border-t pt-4">
-                <h3 className="font-semibold">Fetched Article Details:</h3>
-                <p>
-                  <strong>Title:</strong> {article.title}
-                </p>
-                <p>
-                  <strong>URL:</strong>{" "}
-                  <a
-                    href={article.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-500 hover:underline"
-                  >
-                    {article.url}
-                  </a>
-                </p>
-              </div>
-            )}
           </Alert>
-        ) : script && article ? (
+        ) : currentScript && currentArticle && currentAudioUrl ? (
           <Suspense fallback={<NewsBroadcastLoading />}>
-            <NewsBroadcast script={script} article={article} />
+            <NewsBroadcast
+              script={currentScript}
+              article={currentArticle}
+              audioUrl={currentAudioUrl}
+              onComplete={goToNextArticle}
+              articleIndex={currentIndex}
+              totalArticles={articles.length}
+            />
           </Suspense>
         ) : (
           <Alert className="mb-8">
             <Terminal className="h-4 w-4" />
             <AlertTitle>Unexpected State</AlertTitle>
             <AlertDescription>
-              Could not load news broadcast. Article or script missing.
+              Could not load news broadcast. Article, script, or audio missing.
             </AlertDescription>
           </Alert>
         )}
@@ -229,9 +205,9 @@ export default function Home() {
 
       <footer className="bg-secondary py-3 px-6 text-center text-sm text-muted-foreground mt-auto">
         Powered by AI |{" "}
-        {article ? (
+        {currentArticle ? (
           <a
-            href={article.url}
+            href={currentArticle.url}
             target="_blank"
             rel="noopener noreferrer"
             className="text-accent hover:underline"
