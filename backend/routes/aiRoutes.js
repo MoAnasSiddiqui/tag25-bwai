@@ -2,6 +2,7 @@ const express = require("express");
 const { z } = require("zod");
 const { ai } = require("../ai/ai-instance"); // 🔁 Drop `.js` to avoid ESM headaches
 const { generateAudio } = require("../services/text-to-speech");
+const { fetchNews } = require("../services/fetch-news");
 
 const router = express.Router();
 
@@ -22,7 +23,29 @@ const prompt = ai.definePrompt({
   name: "generateNewsScriptPrompt",
   input: { schema: GenerateNewsScriptInputSchema },
   output: { schema: GenerateNewsScriptOutputSchema },
-  prompt: `You are a professional news script writer. Based on the following news article, create a broadcast-ready news script for a digital avatar to present. Ensure the script has an appropriate tone, pacing, and structure for television news reporting. The script should be approximately 200 words.
+  prompt: `You are a professional news script writer. Based on the following news article, create a broadcast-ready news script for a digital avatar to present. Ensure the script has an appropriate tone, pacing, and structure for television news reporting. The script should be approximately 200-250 words, with the following elements:
+
+Start with a greeting based on the time of day:
+
+Morning: "Good morning, [region]."
+
+Afternoon: "Good afternoon, [region]."
+
+Evening: "Good evening, [region]."
+
+Provide a brief, impactful introduction that draws in the audience.
+
+Introduce the main news story with clear, concise details.
+
+Use smooth transitions between key points to maintain the flow of the story.
+
+Close with a thoughtful sign-off, such as:
+
+"That's all for now, [region]. Stay tuned for more updates."
+
+"Thank you for joining us today. We'll keep you informed as this story develops."
+
+"We'll be back with more after the break."
 
 Article Title: {{{articleTitle}}}
 Article Content: {{{articleContent}}}
@@ -65,13 +88,13 @@ function fetchDummyArticles() {
         "In what experts are calling “a highly unusual time-space kitchen anomaly,” a man from Des Moines claims he stumbled upon a glowing vortex behind a jar of pickles in his refrigerator...",
       url: "https://example.com/news1",
     },
-    {
-      title:
-        "World Leaders Meet for Emergency Summit on Rising Penguin Uprisings in the Southern Hemisphere",
-      content:
-        "In an unprecedented turn of events, world leaders have convened in Geneva to address a surge in coordinated penguin activity...",
-      url: "https://example.com/news2",
-    },
+    // {
+    //   title:
+    //     "World Leaders Meet for Emergency Summit on Rising Penguin Uprisings in the Southern Hemisphere",
+    //   content:
+    //     "In an unprecedented turn of events, world leaders have convened in Geneva to address a surge in coordinated penguin activity...",
+    //   url: "https://example.com/news2",
+    // },
     // {
     //   title:
     //     "Startup Launches Subscription Service for Renting Emotions—Beta Testers Confused and Crying",
@@ -133,7 +156,8 @@ async function generateScriptsAndAudioForArticles(articles) {
 // Function to refresh articles, scripts, and audio
 async function updateArticles() {
   console.log("[Article Refresh] Fetching fresh articles...");
-  cachedArticles = fetchDummyArticles(); // Replace with real source
+  // cachedArticles = fetchDummyArticles(); // Replace with real source
+  cachedArticles = await fetchNews();
   const scriptsAndAudio = await generateScriptsAndAudioForArticles(
     cachedArticles
   ); // Generate scripts and audio

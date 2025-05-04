@@ -5,7 +5,7 @@ import NewsBroadcast from "@/components/NewsBroadcast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Loader2, Terminal } from "lucide-react";
+import { Loader2, Newspaper, Terminal } from "lucide-react";
 
 // Define the NewsArticle type
 type NewsArticle = {
@@ -84,7 +84,11 @@ export default function Home() {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data: {
+        audioUrls: string[];
+        articles: NewsArticle[];
+        scripts: string[];
+      } = await response.json();
 
       if (data?.articles && data?.articles.length > 0) {
         setArticles(data.articles);
@@ -136,8 +140,8 @@ export default function Home() {
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-background to-secondary dark">
       <header className="bg-secondary py-4 px-6 shadow-md sticky top-0 z-10">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-primary flex items-center">
-            <svg
+          <h1 className="text-2xl font-bold text-primary flex items-center gap-2">
+            {/* <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
               fill="currentColor"
@@ -145,8 +149,9 @@ export default function Home() {
             >
               <path d="M4.5 2.25a.75.75 0 0 0 0 1.5v16.5a.75.75 0 0 0 1.5 0v-1.321l3.474 1.61a.75.75 0 0 0 1.052-.41l8.679-19.426a.75.75 0 0 0-1.314-.593L5.83 15.369v-3.35a.75.75 0 0 0-.976-.724L4.5 11.625v-9.375Z" />
               <path d="M10.072 8.043a.75.75 0 0 0 .328-1.296l-6-3A.75.75 0 0 0 3.75 4.5v6.413l5.833 2.712a.75.75 0 0 0 .489-.015l.001-.001.001-.001.002-.001.005-.002a.752.752 0 0 0 .29-.112l.002-.001.001-.001a.75.75 0 0 0 .13-.074l.003-.002.007-.004a.749.749 0 0 0 .14-.098l.002-.002.002-.001h.001l.002-.002a.748.748 0 0 0 .121-.113l.002-.002.004-.005.005-.006a.75.75 0 0 0 .133-.191l-1.162-2.581-3.415 1.59a.75.75 0 0 0-.328 1.296l6 3a.75.75 0 0 0 .976-.724l1.06-2.358-6.224-2.889Z" />
-            </svg>
-            NewsCastAI
+            </svg> */}
+            <Newspaper className="text-blue-600" />
+            AI News Broadcast
           </h1>
           <div className="flex items-center space-x-4">
             {!isLoading && articles.length > 0 && (
@@ -156,7 +161,7 @@ export default function Home() {
             )}
             <button
               onClick={handleRefresh}
-              className="px-4 py-2 bg-accent text-accent-foreground rounded-md hover:bg-accent/80 transition-colors"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-full"
               disabled={isLoading}
             >
               {isLoading ? (

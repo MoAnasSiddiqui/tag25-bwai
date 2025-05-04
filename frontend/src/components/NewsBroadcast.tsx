@@ -402,7 +402,7 @@ const NewsBroadcast: React.FC<NewsBroadcastProps> = ({
       </div>
 
       {/* Script Section */}
-      <div className="md:col-span-1">
+      <div className="md:col-span-1 source-serif-4">
         <Card className="shadow-xl h-full flex flex-col bg-gray-900 border-gray-800 rounded-xl">
           <CardHeader className="bg-gray-900 p-4 border-b border-gray-800">
             <CardTitle className="text-lg text-white flex items-center">
@@ -412,7 +412,7 @@ const NewsBroadcast: React.FC<NewsBroadcastProps> = ({
                 viewBox="0 0 24 24"
                 strokeWidth={1.5}
                 stroke="currentColor"
-                className="w-5 h-5 mr-2 text-blue-500"
+                className="w-5 h-5 mr-2 text-blue-500 flex-shrink-0"
               >
                 <path
                   strokeLinecap="round"
@@ -420,7 +420,7 @@ const NewsBroadcast: React.FC<NewsBroadcastProps> = ({
                   d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
                 />
               </svg>
-              <span className="font-bold">NEWS SCRIPT</span>
+              <span className="font-bold">{article.title}</span>
             </CardTitle>
             <CardDescription className="text-gray-400">
               Article:{" "}
