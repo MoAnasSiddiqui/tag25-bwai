@@ -86,3 +86,87 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes pulse-slow {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes sound {
+  0%,
+  100% {
+    height: 6px;
+  }
+  50% {
+    height: 16px;
+  }
+}
+
+@keyframes sound-delay-1 {
+  0%,
+  100% {
+    height: 4px;
+  }
+  30% {
+    height: 14px;
+  }
+}
+
+@keyframes sound-delay-2 {
+  0%,
+  100% {
+    height: 2px;
+  }
+  40% {
+    height: 18px;
+  }
+}
+
+@keyframes sound-delay-3 {
+  0%,
+  100% {
+    height: 4px;
+  }
+  60% {
+    height: 14px;
+  }
+}
+
+@keyframes sound-delay-4 {
+  0%,
+  100% {
+    height: 6px;
+  }
+  70% {
+    height: 12px;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-sound {
+  animation: sound 0.8s ease-in-out infinite;
+}
+
+.animate-sound-delay-1 {
+  animation: sound-delay-1 1s ease-in-out infinite;
+}
+
+.animate-sound-delay-2 {
+  animation: sound-delay-2 1.2s ease-in-out infinite;
+}
+
+.animate-sound-delay-3 {
+  animation: sound-delay-3 0.9s ease-in-out infinite;
+}
+
+.animate-sound-delay-4 {
+  animation: sound-delay-4 1.1s ease-in-out infinite;
+}

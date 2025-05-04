@@ -133,7 +133,7 @@ export default function Home() {
   const currentAudioUrl = audioUrls.length > 0 ? audioUrls[currentIndex] : null;
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-background to-secondary">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-background to-secondary dark">
       <header className="bg-secondary py-4 px-6 shadow-md sticky top-0 z-10">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-primary flex items-center">
